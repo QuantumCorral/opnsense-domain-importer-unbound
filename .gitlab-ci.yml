@@ -7,8 +7,8 @@ build_image:
   services:
     - docker:19.03.12-dind
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $CI_REGISTRY_IMAGE .
-    - docker push $CI_REGISTRY_IMAGE
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -f Dockerfile --build-arg GIT_VERSION="$CI_PROJECT_NAME-$CI_PIPELINE_IID" --tag $CI_REGISTRY_IMAGE/opnsense-unbound-inporter-$CI_COMMIT_BRANCH opnsense-unbound-inporter
+    - docker push $CI_REGISTRY_IMAGE/opnsense-unbound-inporter-$CI_COMMIT_BRANCH:latest
   only:
     - master
