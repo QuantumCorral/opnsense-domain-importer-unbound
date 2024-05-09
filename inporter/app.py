@@ -13,29 +13,30 @@ OPNSENSE_URL = 'https://10.22.30.114/api/unbound/settings/addDomainOverride'
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        domain = request.form['domain']
-        ip_address = request.form['ip_address']
-        result = add_dns_override(domain, ip_address)
+        domain_name = request.form['domain_name']
+        server_ip = request.form['server_ip']
+        result = add_dns_override(domain_name, server_ip)
         return f'<h1>DNS Override hinzugefügt: {result}</h1>'
     return '''
     <form method="post">
-        Domain: <input type="text" name="domain"><br>
-        IP Address: <input type="text" name="ip_address"><br>
+        Domain Name: <input type="text" name="domain_name"><br>
+        Server IP: <input type="text" name="server_ip"><br>
         <input type="submit" value="Submit">
     </form>
     '''
 
-def add_dns_override(domain, ip_address):
+def add_dns_override(domain_name, server_ip):
     auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
     headers = {
         'Content-Type': 'application/json'
     }
     data = {
-        'domain': domain,
-        'ip': ip_address
+        'domain': {
+            'domain': domain_name,
+            'server': server_ip
+        }
     }
-    response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)  # SSL-Überprüfung deaktiviert für Testz
-
+    response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)  # SSL-Überprüfung deaktiviert für Testzwecke
     return response.json()
 
 if __name__ == '__main__':
