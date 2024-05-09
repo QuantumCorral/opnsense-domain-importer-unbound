@@ -5,11 +5,11 @@ FROM python:3.8-slim
 WORKDIR /app
 
 # Abhängigkeiten installieren
-COPY inporter/requirements.txt /root/requirements.txt
+COPY equirements.txt /root/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Kopieren des Flask-Skripts in den Container
-COPY inporter/app.py /root/app.py
+COPY app.py /root/
 
 # Port freigeben, der vom Flask-Server verwendet wird
 EXPOSE 5000
