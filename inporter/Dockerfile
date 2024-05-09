@@ -1,6 +1,9 @@
 # Verwenden des offiziellen Python 3.8-Images als Basis
 FROM python:3.8-slim
 
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt
 RUN git clone https://github.com/uklans/cache-domains.git
