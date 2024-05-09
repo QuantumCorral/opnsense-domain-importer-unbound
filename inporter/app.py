@@ -15,19 +15,21 @@ REPO_URL = "https://api.github.com/repos/uklans/cache-domains/contents/cache_dom
 
 def get_github_files():
     response = requests.get(REPO_URL)
-    files = [file['download_url'] for file in response.json() if file['name'].endswith('.txt')]
-    return files
+    if response.status_code != 200:
+        print("Error fetching files:", response.status_code, response.text)
+        return []
+    return [file['download_url'] for file in response.json() if file['name'].endswith('.txt')]
 
 def parse_domains(files):
     domains = set()
     for file_url in files:
         response = requests.get(file_url)
+        if response.status_code != 200:
+            continue
         for line in response.text.splitlines():
-            if not line.startswith('#') and line.strip():
-                # Entfernen von '*' und Kommentaren
-                clean_line = re.sub(r'\*|\s*#.*', '', line).strip()
-                if clean_line:
-                    domains.add(clean_line)
+            if line.strip() and not line.startswith('#'):
+                clean_line = re.sub(r'\*|\.|;|#.*', '', line).strip()
+                domains.add(clean_line)
     return domains
 
 @app.route('/', methods=['GET'])
@@ -38,25 +40,30 @@ def index():
         Domain Name: <input type="text" name="domain_name"><br>
         Server IP: <input type="text" name="server_ip"><br>
         <input type="submit" value="Submit"><br><br>
-        <button formaction="/download-and-override">Download Domains and Override</button>
+        <button type="submit" name="action" value="download_and_override">Download Domains and Override</button>
     </form>
     ''')
 
 @app.route('/', methods=['POST'])
 def add_override():
+    action = request.form.get('action', '')
+    if action == 'download_and_override':
+        return download_and_override()
     domain_name = request.form['domain_name']
     server_ip = request.form['server_ip']
     result = add_dns_override(domain_name, server_ip)
     return f'<h1>DNS Override hinzugefügt: {result}</h1>'
 
-@app.route('/download-and-override', methods=['POST'])
 def download_and_override():
     files = get_github_files()
+    if not files:
+        return "Error: No domain files found."
     domains = parse_domains(files)
-    # Hier könnten Sie bestehende Einträge löschen
+    results = {}
     for domain in domains:
-        add_dns_override(domain, "IP_to_be_defined")  # Hier müssen Sie eine IP-Adresse definieren oder anpassen
-    return f'<h1>{len(domains)} Domains wurden hinzugefügt.</h1>'
+        response = add_dns_override(domain, "IP_ADDRESS")  # Define IP_ADDRESS appropriately
+        results[domain] = 'Success' if response.get('status') == 'ok' else 'Failed'
+    return f'<h1>{len(domains)} Domains wurden hinzugefügt. Details: {results}</h1>'
 
 def add_dns_override(domain, ip_address):
     auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
@@ -67,7 +74,7 @@ def add_dns_override(domain, ip_address):
             'server': ip_address
         }
     }
-    response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)  # SSL-Überprüfung deaktiviert für Testzwecke
+    response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)
     return response.json()
 
 if __name__ == '__main__':
