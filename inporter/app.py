@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template_string
 import requests
 import json
+from requests.auth import HTTPBasicAuth
 
 app = Flask(__name__)
 
@@ -25,16 +26,16 @@ def index():
     '''
 
 def add_dns_override(domain, ip_address):
+    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
     headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {OPNSENSE_API_KEY}:{OPNSENSE_API_SECRET}'
+        'Content-Type': 'application/json'
     }
     data = {
         'domain': domain,
         'ip': ip_address
     }
-    # Stellen Sie sicher, dass die SSL-Zertifikatsüberprüfung in Produktionsumgebungen nicht deaktiviert wird
-    response = requests.post(OPNSENSE_URL, headers=headers, json=data, verify=False)  # SSL-Überprüfung deaktiviert für Testzwecke
+    response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)  # SSL-Überprüfung deaktiviert für Testz
+
     return response.json()
 
 if __name__ == '__main__':
