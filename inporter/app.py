@@ -13,7 +13,7 @@ OPNSENSE_API_KEY = 'CtNv6Nw5iE4Tg6CGfNdkSM/3/XvRTrM09BGEPr75+Pq2Aue7hLpMxTn2iVZ4
 OPNSENSE_API_SECRET = 'dsNfsP99QHxYoFuBrZU6U3JXB0xuAFZnTr84qhgIWj7B+UB25DeMIZoOf2uVuiVBI6n8ezFVi/YiIdGp'
 OPNSENSE_URL = 'https://10.22.30.114/api/unbound/settings/addDomainOverride'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
-LOCAL_REPO_DIR = "/tmp/cache-domains"
+LOCAL_REPO_DIR = "/opt/download"
 
 def clone_repo():
     if os.path.exists(LOCAL_REPO_DIR):
@@ -21,13 +21,13 @@ def clone_repo():
     subprocess.check_call(['git', 'clone', REPO_URL, LOCAL_REPO_DIR])
     print("Repository cloned.")
 
-def delete_repo():
-    shutil.rmtree(LOCAL_REPO_DIR)
-    print("Repository deleted.")
+#def delete_repo():
+#    shutil.rmtree(LOCAL_REPO_DIR)
+#    print("Repository deleted.")
 
 def parse_domains():
     domains = set()
-    for root, _, files in os.walk(os.path.join(LOCAL_REPO_DIR, 'cache_domains')):
+    for root, _, files in os.walk(os.path.join(LOCAL_REPO_DIR, 'cache-domains')):
         for file in files:
             if file.endswith('.txt'):
                 file_path = os.path.join(root, file)
@@ -66,7 +66,7 @@ def update_domains():
         delete_repo()
         return f'<h1>{len(domains)} Domains wurden aktualisiert. Details: {results}</h1>'
     except Exception as e:
-        delete_repo()  # Clean up even in case of failure
+        #delete_repo()  # Clean up even in case of failure
         return f"An error occurred: {str(e)}"
 
 def add_dns_override(domain, ip_address):

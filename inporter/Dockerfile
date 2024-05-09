@@ -5,9 +5,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt
-RUN git clone https://github.com/uklans/cache-domains.git
-
+#WORKDIR /opt
+#RUN git clone https://github.com/uklans/cache-domains.git
+RUN mkdir /opt/download
 
 # Arbeitsverzeichnis im Container setzen
 WORKDIR /app
