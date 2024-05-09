@@ -5,7 +5,7 @@ FROM python:3.8-slim
 WORKDIR /app
 
 # Abhängigkeiten installieren
-COPY equirements.txt /root/
+COPY requirements.txt /root/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Kopieren des Flask-Skripts in den Container
