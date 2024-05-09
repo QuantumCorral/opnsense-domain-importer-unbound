@@ -1,7 +1,7 @@
 stages:
   - build
 
-build_image:
+opnsense-unbound-inporter:
   stage: build
   image: docker:19.03.12
   services:
