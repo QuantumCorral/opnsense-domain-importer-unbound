@@ -5,9 +5,9 @@ import json
 app = Flask(__name__)
 
 # Ersetze mit den tatsächlichen API-Zugangsdaten und der URL deiner OPNsense-Instanz
-OPNSENSE_API_KEY = 'dein_api_key'
-OPNSENSE_API_SECRET = 'dein_api_secret'
-OPNSENSE_URL = 'https://deine_opnsense_ip/api'
+OPNSENSE_API_KEY = 'CtNv6Nw5iE4Tg6CGfNdkSM/3/XvRTrM09BGEPr75+Pq2Aue7hLpMxTn2iVZ4MqKW6UWRuEvQ+Ln34RyZ'
+OPNSENSE_API_SECRET = 'dsNfsP99QHxYoFuBrZU6U3JXB0xuAFZnTr84qhgIWj7B+UB25DeMIZoOf2uVuiVBI6n8ezFVi/YiIdGp'
+OPNSENSE_URL = 'https://10.22.30.114/api'
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
