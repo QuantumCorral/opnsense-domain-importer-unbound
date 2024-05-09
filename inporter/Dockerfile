@@ -1,6 +1,11 @@
 # Verwenden des offiziellen Python 3.8-Images als Basis
 FROM python:3.8-slim
 
+
+WORKDIR /opt
+RUN git clone https://github.com/uklans/cache-domains.git
+
+
 # Arbeitsverzeichnis im Container setzen
 WORKDIR /app
 
