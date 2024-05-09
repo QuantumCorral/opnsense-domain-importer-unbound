@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Kopieren des Flask-Skripts in den Container
-COPY app.py /root/
+COPY app.py .
 
 # Port freigeben, der vom Flask-Server verwendet wird
 EXPOSE 5000
