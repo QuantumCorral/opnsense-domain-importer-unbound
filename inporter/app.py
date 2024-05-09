@@ -7,7 +7,7 @@ app = Flask(__name__)
 # Ersetze mit den tatsächlichen API-Zugangsdaten und der URL deiner OPNsense-Instanz
 OPNSENSE_API_KEY = 'CtNv6Nw5iE4Tg6CGfNdkSM/3/XvRTrM09BGEPr75+Pq2Aue7hLpMxTn2iVZ4MqKW6UWRuEvQ+Ln34RyZ'
 OPNSENSE_API_SECRET = 'dsNfsP99QHxYoFuBrZU6U3JXB0xuAFZnTr84qhgIWj7B+UB25DeMIZoOf2uVuiVBI6n8ezFVi/YiIdGp'
-OPNSENSE_URL = 'https://10.22.30.114/api'
+OPNSENSE_URL = 'https://10.22.30.114/api/unbound/settings/addDomainOverride'
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -33,7 +33,8 @@ def add_dns_override(domain, ip_address):
         'domain': domain,
         'ip': ip_address
     }
-    response = requests.post(f'{OPNSENSE_URL}/unbound/dns/override/add', headers=headers, data=json.dumps(data), verify=False)
+    # Stellen Sie sicher, dass die SSL-Zertifikatsüberprüfung in Produktionsumgebungen nicht deaktiviert wird
+    response = requests.post(OPNSENSE_URL, headers=headers, json=data, verify=False)  # SSL-Überprüfung deaktiviert für Testzwecke
     return response.json()
 
 if __name__ == '__main__':
