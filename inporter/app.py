@@ -36,6 +36,7 @@ def parse_domains():
                         if line.strip() and not line.startswith('#'):
                             clean_line = re.sub(r'\*|\.|;|#.*', '', line).strip()
                             domains.add(clean_line)
+                            print("Parsed domain:", clean_line)  # Debugging output
     return domains
 
 @app.route('/', methods=['GET'])
@@ -55,21 +56,26 @@ def handle_request():
     return redirect(url_for('index'))
 
 def update_domains():
-    clone_repo()
-    domains = parse_domains()
-    results = {}
-    for domain in domains:
-        response = add_dns_override(domain, "IP_ADDRESS")  # Define IP_ADDRESS appropriately
-        results[domain] = 'Success' if response.status_code == 200 else 'Failed'
-    delete_repo()
-    return f'<h1>{len(domains)} Domains wurden aktualisiert. Details: {results}</h1>'
+    try:
+        clone_repo()
+        domains = parse_domains()
+        results = {}
+        for domain in domains:
+            response = add_dns_override(domain, "IP_ADDRESS")  # Define IP_ADDRESS appropriately
+            results[domain] = 'Success' if response.status_code == 200 else f'Failed: {response.json()}'
+        delete_repo()
+        return f'<h1>{len(domains)} Domains wurden aktualisiert. Details: {results}</h1>'
+    except Exception as e:
+        delete_repo()  # Clean up even in case of failure
+        return f"An error occurred: {str(e)}"
 
 def add_dns_override(domain, ip_address):
     auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
     headers = {'Content-Type': 'application/json'}
     data = {'domain': {'domain': domain, 'server': ip_address}}
     response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)
+    print("OPNsense response:", response.json())  # Debugging output
     return response
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
