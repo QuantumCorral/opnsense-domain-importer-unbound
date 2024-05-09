@@ -2,6 +2,9 @@ from flask import Flask, request, render_template_string, redirect, url_for
 import requests
 from requests.auth import HTTPBasicAuth
 import re
+import subprocess
+import shutil
+import os
 
 app = Flask(__name__)
 
@@ -9,27 +12,30 @@ app = Flask(__name__)
 OPNSENSE_API_KEY = 'CtNv6Nw5iE4Tg6CGfNdkSM/3/XvRTrM09BGEPr75+Pq2Aue7hLpMxTn2iVZ4MqKW6UWRuEvQ+Ln34RyZ'
 OPNSENSE_API_SECRET = 'dsNfsP99QHxYoFuBrZU6U3JXB0xuAFZnTr84qhgIWj7B+UB25DeMIZoOf2uVuiVBI6n8ezFVi/YiIdGp'
 OPNSENSE_URL = 'https://10.22.30.114/api/unbound/settings/addDomainOverride'
+REPO_URL = "https://github.com/uklans/cache-domains.git"
+LOCAL_REPO_DIR = "/tmp/cache-domains"
 
-# GitHub Repo URL für Textdateien
-REPO_URL = "https://api.github.com/repos/uklans/cache-domains/contents/cache_domains"
+def clone_repo():
+    if os.path.exists(LOCAL_REPO_DIR):
+        shutil.rmtree(LOCAL_REPO_DIR)
+    subprocess.check_call(['git', 'clone', REPO_URL, LOCAL_REPO_DIR])
+    print("Repository cloned.")
 
-def get_github_files():
-    response = requests.get(REPO_URL)
-    if response.status_code != 200:
-        print("Error fetching files:", response.status_code, response.text)
-        return []
-    return [file['download_url'] for file in response.json() if file['name'].endswith('.txt')]
+def delete_repo():
+    shutil.rmtree(LOCAL_REPO_DIR)
+    print("Repository deleted.")
 
-def parse_domains(files):
+def parse_domains():
     domains = set()
-    for file_url in files:
-        response = requests.get(file_url)
-        if response.status_code != 200:
-            continue
-        for line in response.text.splitlines():
-            if line.strip() and not line.startswith('#'):
-                clean_line = re.sub(r'\*|\.|;|#.*', '', line).strip()
-                domains.add(clean_line)
+    for root, _, files in os.walk(os.path.join(LOCAL_REPO_DIR, 'cache_domains')):
+        for file in files:
+            if file.endswith('.txt'):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as f:
+                    for line in f:
+                        if line.strip() and not line.startswith('#'):
+                            clean_line = re.sub(r'\*|\.|;|#.*', '', line).strip()
+                            domains.add(clean_line)
     return domains
 
 @app.route('/', methods=['GET'])
@@ -37,45 +43,33 @@ def index():
     return render_template_string('''
     <h1>OPNsense Domain Overrides Management</h1>
     <form method="post">
-        Domain Name: <input type="text" name="domain_name"><br>
-        Server IP: <input type="text" name="server_ip"><br>
-        <input type="submit" value="Submit"><br><br>
-        <button type="submit" name="action" value="download_and_override">Download Domains and Override</button>
+        <button type="submit" name="action" value="update_domains">Update Domains</button>
     </form>
     ''')
 
 @app.route('/', methods=['POST'])
-def add_override():
+def handle_request():
     action = request.form.get('action', '')
-    if action == 'download_and_override':
-        return download_and_override()
-    domain_name = request.form['domain_name']
-    server_ip = request.form['server_ip']
-    result = add_dns_override(domain_name, server_ip)
-    return f'<h1>DNS Override hinzugefügt: {result}</h1>'
+    if action == 'update_domains':
+        return update_domains()
+    return redirect(url_for('index'))
 
-def download_and_override():
-    files = get_github_files()
-    if not files:
-        return "Error: No domain files found."
-    domains = parse_domains(files)
+def update_domains():
+    clone_repo()
+    domains = parse_domains()
     results = {}
     for domain in domains:
         response = add_dns_override(domain, "IP_ADDRESS")  # Define IP_ADDRESS appropriately
-        results[domain] = 'Success' if response.get('status') == 'ok' else 'Failed'
-    return f'<h1>{len(domains)} Domains wurden hinzugefügt. Details: {results}</h1>'
+        results[domain] = 'Success' if response.status_code == 200 else 'Failed'
+    delete_repo()
+    return f'<h1>{len(domains)} Domains wurden aktualisiert. Details: {results}</h1>'
 
 def add_dns_override(domain, ip_address):
     auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
     headers = {'Content-Type': 'application/json'}
-    data = {
-        'domain': {
-            'domain': domain,
-            'server': ip_address
-        }
-    }
+    data = {'domain': {'domain': domain, 'server': ip_address}}
     response = requests.post(OPNSENSE_URL, auth=auth, headers=headers, json=data, verify=False)
-    return response.json()
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
