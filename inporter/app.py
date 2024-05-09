@@ -33,7 +33,7 @@ def add_dns_override(domain, ip_address):
         'domain': domain,
         'ip': ip_address
     }
-    response = requests.post(f'{OPNSENSE_URL}/unbound/dns/override/add', headers=headers, data=json.dumps(data))
+    response = requests.post(f'{OPNSENSE_URL}/unbound/dns/override/add', headers=headers, data=json.dumps(data), verify=False)
     return response.json()
 
 if __name__ == '__main__':
