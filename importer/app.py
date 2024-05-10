@@ -59,31 +59,34 @@ def get_current_overrides():
 def handle_request():
     if request.method == 'POST':
         action = request.form.get('action', '')
-        domain_name = request.form['domain_name']
-        server_ip = request.form['manual_ip']
+        current_overrides = get_current_overrides()
 
         if action == 'update_domains':
+            server_ip = request.form.get('auto_ip', '')
             return update_domains(server_ip)
-
-        current_overrides = get_current_overrides()
-        # Überprüfe, ob die Domain bereits existiert und handle entsprechend
-        if domain_name in current_overrides:
-            if current_overrides[domain_name] == server_ip:
-                message = f'Keine Änderung notwendig: {domain_name} hat bereits die IP {server_ip}.'
-                return render_template('success.html', message=message)
-            else:
-                # Update vorhandene Domain-Override
-                success, result = update_dns_override(domain_name, server_ip)
-                message = f'DNS Override aktualisiert: {domain_name} auf IP {server_ip}' if success else f'Fehler: {result}'
         else:
-            # Füge eine neue Domain-Override hinzu
-            success, result = add_dns_override(domain_name, server_ip)
-            message = f'DNS Override hinzugefügt: {domain_name} mit IP {server_ip}' if success else f'Fehler: {result}'
+            domain_name = request.form.get('domain_name', None)
+            server_ip = request.form.get('manual_ip', None)
+            if domain_name and server_ip:  # Stelle sicher, dass beide Felder vorhanden sind
+                if domain_name in current_overrides:
+                    if current_overrides[domain_name] == server_ip:
+                        message = f'Keine Änderung notwendig: {domain_name} hat bereits die IP {server_ip}.'
+                        return render_template('success.html', message=message)
+                    else:
+                        # Update vorhandene Domain-Override
+                        success, result = update_dns_override(domain_name, server_ip)
+                        message = f'DNS Override aktualisiert: {domain_name} auf IP {server_ip}' if success else f'Fehler: {result}'
+                else:
+                    # Füge eine neue Domain-Override hinzu
+                    success, result = add_dns_override(domain_name, server_ip)
+                    message = f'DNS Override hinzugefügt: {domain_name} mit IP {server_ip}' if success else f'Fehler: {result}'
+                return render_template('success.html', message=message)
 
-        return render_template('success.html', message=message)
-
+    # Dieser Fall tritt auf, wenn kein POST-Request gesendet wird oder die erforderlichen Felder fehlen
     current_overrides = get_current_overrides()
     return render_template('home.html', overrides=current_overrides)
+
+
 
 def update_domains(server_ip):
     clone_repo()
