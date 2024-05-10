@@ -14,7 +14,7 @@ COPY app.py .
 
 RUN mkdir templates
 
-COPY templates/* templates/
+COPY templates/ templates/
 
 ENV OPNSENSE_API_KEY=""
 ENV OPNSENSE_API_SECRET=""
