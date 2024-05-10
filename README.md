@@ -20,7 +20,7 @@ docker compose
 
 services:
   unbound-importer:
-    image: registry.gitlab.com/dns61418/opnsense-unbound-inporter/inporter-main
+    image: registry.gitlab.com/netsession1/dns/opnsense-domain-importer-unbound/inporter-main:latest
     restart: always
     ports:
       - 5000:5000
