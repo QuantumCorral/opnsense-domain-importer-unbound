@@ -25,8 +25,8 @@ services:
     ports:
       - 5000:5000
     environment:
-     - OPNsense_IP=
-     - OPNsense_API_KEY=
+     - OPNSENSE_IP=
+     - OPNSENSE_API_KEY=
      - OPNSENSE_API_SECRET=
 
 ```
