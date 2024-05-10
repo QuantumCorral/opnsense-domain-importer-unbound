@@ -1,6 +1,13 @@
 # OPNsense Unbound inporter
 
-Phyton Script welches die Domains aus dem Cache-Domain Repo als .txt Datein herunterlädt, alle .txt Datein durchsucht, alle zeilen mit "#" entfernt, ".", "*" und "*." am anfang jeder Domain entfernt, dann vorhandene Domain Overrides auf der OPNsense ausliest, diese mit dem aus dem Repo vergleicht und anpasst oder hinzufügt.
+Phyton Script welches die Domains aus dem Cache-Domain Repo als .txt Datein herunterlädt, alle .txt Datein durchsucht, alle zeilen mit 
+```
+"#" entfernt 
+"."
+"*"
+"*." 
+```
+am anfang jeder Domain entfernt, dann vorhandene Domain Overrides auf der OPNsense ausliest, diese mit dem aus dem Repo vergleicht und anpasst oder hinzufügt.
 
 Man kann auch manuelle Domain Overrides hinzufügen, diese werden auch mit den vorhandenen Overrides auf der OPNsense verglichen, hinzugefügt oder angepasst.
 
