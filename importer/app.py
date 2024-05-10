@@ -58,6 +58,10 @@ def get_current_overrides():
 
 @app.route('/', methods=['GET', 'POST'])
 def handle_request():
+    # Abrufen des aktuellen Status von Unbound DNS
+    unbound_status_info = unbound_status()
+    unbound_running = unbound_status_info.get('data', {}).get('status', 'unknown')
+
     if request.method == 'POST':
         action = request.form.get('action', '')
         current_overrides = get_current_overrides()
@@ -65,27 +69,27 @@ def handle_request():
         if action == 'update_domains':
             server_ip = request.form.get('auto_ip', '')
             return update_domains(server_ip)
+        elif action == 'restart_unbound':
+            return restart_unbound()
         else:
             domain_name = request.form.get('domain_name', None)
             server_ip = request.form.get('manual_ip', None)
-            if domain_name and server_ip:  # Stelle sicher, dass beide Felder vorhanden sind
+            if domain_name and server_ip:
                 if domain_name in current_overrides:
                     if current_overrides[domain_name] == server_ip:
-                        message = f'Keine Änderung notwendig: {domain_name} hat bereits die IP {server_ip}.'
+                        message = f'No change necessary: {domain_name} already has the IP {server_ip}.'
                         return render_template('success.html', message=message)
                     else:
-                        # Update vorhandene Domain-Override
                         success, result = update_dns_override(domain_name, server_ip)
-                        message = f'DNS Override aktualisiert: {domain_name} auf IP {server_ip}' if success else f'Fehler: {result}'
+                        message = f'DNS override updated: {domain_name} to IP {server_ip}' if success else f'Error: {result}'
                 else:
-                    # Füge eine neue Domain-Override hinzu
                     success, result = add_dns_override(domain_name, server_ip)
-                    message = f'DNS Override hinzugefügt: {domain_name} mit IP {server_ip}' if success else f'Fehler: {result}'
+                    message = f'DNS override added: {domain_name} with IP {server_ip}' if success else f'Error: {result}'
                 return render_template('success.html', message=message)
 
     # Dieser Fall tritt auf, wenn kein POST-Request gesendet wird oder die erforderlichen Felder fehlen
     current_overrides = get_current_overrides()
-    return render_template('home.html', overrides=current_overrides)
+    return render_template('home.html', overrides=current_overrides, unbound_running=unbound_running)
 
 
 
@@ -133,6 +137,44 @@ def update_dns_override(domain, ip_address):
         response = requests.post(url, auth=auth, headers=headers, data=data, verify=False)
         return response.status_code == 200, response.json()
     return False, "UUID not found for domain"
+
+
+@app.route('/restart-unbound', methods=['POST'])
+def restart_unbound():
+    restart_url = f'https://{OPNSENSE_IP}/api/unbound/service/restart'
+    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
+    headers = {'Content-Type': 'application/json'}
+
+    # Senden von leeren JSON-Daten
+    data = json.dumps({})
+
+    try:
+        response = requests.post(restart_url, auth=auth, headers=headers, data=data, verify=False)
+        if response.status_code == 200:
+            return render_template('success.html', message='Unbound DNS successfully restarted')
+        else:
+            return render_template('error.html', message=f'Failed to restart Unbound DNS: {response.text}')
+    except Exception as e:
+        return render_template('error.html', message=str(e))
+
+
+@app.route('/unbound-status', methods=['GET'])
+def unbound_status():
+    status_url = f'https://{OPNSENSE_IP}/api/unbound/service/status'
+    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
+
+    try:
+        response = requests.get(status_url, auth=auth, verify=False)  # Stellen Sie sicher, dass SSL-Zertifikate überprüft werden
+        if response.status_code == 200:
+            status_data = response.json()
+            return {'status': 'success', 'message': 'Unbound DNS status retrieved successfully', 'data': status_data}
+        else:
+            return {'status': 'error', 'message': f'Failed to retrieve Unbound DNS status: {response.text}'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
