@@ -11,14 +11,14 @@
         ul { padding-left: 0; }
         li { list-style: none; padding: 10px; border-bottom: 1px solid #ccc; }
         .header, .section-header { margin-bottom: 10px; }
-        .section-header { padding-top: 40px; }
+        .section-header { padding-top: 40px; } 
         .status-alert { margin-top: 20px; margin-bottom: 20px; font-size: 1.25em; }
         .status-running { color: green; }
         .status-stopped { color: red; }
         .form-spacing { margin-top: 10px; }
         table { width: 100%; }
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ccc; }
-        #loading { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background-color: rgba(255,255,255,0.8); border-radius: 10px; padding: 20px; }
+        #loading { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; }
     </style>
 </head>
 <body>
@@ -28,11 +28,6 @@
         </div>
         <div class="status-alert alert alert-info" role="alert">
             Unbound DNS Status: <strong class="{{ 'status-running' if unbound_running == 'running' else 'status-stopped' }}">{{ unbound_running }}</strong>
-        </div>
-        <div id="loading">
-            <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Loading...</span>
-            </div>
         </div>
         <div class="section-header">
             <h2>Manual Domain Override</h2>
@@ -49,7 +44,7 @@
             <button type="submit" class="btn btn-primary">Submit Domain Override</button>
         </form>
         <div class="section-header">
-            <h2>Automated Domain Update from Cache Domains Repository</h2>
+            <h2>Automated Domain Update from Cache Domains Reposetory </h2>
         </div>
         <form method="post" class="form-spacing">
             <div class="form-group">
@@ -87,6 +82,7 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         function showLoading() {
             document.getElementById('loading').style.display = 'block';
@@ -95,5 +91,6 @@
             form.addEventListener('submit', showLoading);
         });
     </script>
+
 </body>
 </html>
