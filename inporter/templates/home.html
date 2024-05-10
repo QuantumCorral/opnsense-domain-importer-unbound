@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPNsense Domain Overrides Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { margin-top: 20px; }
+        ul { padding-left: 0; }
+        li { list-style: none; padding: 10px; border-bottom: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OPNsense Domain Overrides Management</h1>
+        <form method="post">
+            <div class="form-group">
+                <label for="domain_name">Domain Name:</label>
+                <input type="text" class="form-control" name="domain_name" id="domain_name" required>
+            </div>
+            <div class="form-group">
+                <label for="manual_ip">Server IP for Manual Entry:</label>
+                <input type="text" class="form-control" name="manual_ip" id="manual_ip" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Domain Override</button>
+        </form>
+        <form method="post">
+            <div class="form-group">
+                <label for="auto_ip">Server IP for Auto Update:</label>
+                <input type="text" class="form-control" name="auto_ip" id="auto_ip" required>
+            </div>
+            <button type="submit" class="btn btn-secondary" name="action" value="update_domains">Download and Update Domains</button>
+        </form>
+        <h2>Vorhandene Domain Overrides:</h2>
+        <ul>
+        {% for domain, server in overrides.items() %}
+            <li>{{ domain }}: {{ server }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+root@Docker-Host-01:~# cat templates/home.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPNsense Domain Overrides Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { margin-top: 20px; }
+        ul { padding-left: 0; }
+        li { list-style: none; padding: 10px; border-bottom: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OPNsense Domain Overrides Management</h1>
+        <form method="post">
+            <div class="form-group">
+                <label for="domain_name">Domain Name:</label>
+                <input type="text" class="form-control" name="domain_name" id="domain_name" required>
+            </div>
+            <div class="form-group">
+                <label for="manual_ip">Server IP for Manual Entry:</label>
+                <input type="text" class="form-control" name="manual_ip" id="manual_ip" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Domain Override</button>
+        </form>
+        <form method="post">
+            <div class="form-group">
+                <label for="auto_ip">Server IP for Auto Update:</label>
+                <input type="text" class="form-control" name="auto_ip" id="auto_ip" required>
+            </div>
+            <button type="submit" class="btn btn-secondary" name="action" value="update_domains">Download and Update Domains</button>
+        </form>
+        <h2>Vorhandene Domain Overrides:</h2>
+        <ul>
+        {% for domain, server in overrides.items() %}
+            <li>{{ domain }}: {{ server }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
