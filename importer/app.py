@@ -9,10 +9,11 @@ import json
 
 app = Flask(__name__)
 
-OPNSENSE_API_KEY = 'CtNv6Nw5iE4Tg6CGfNdkSM/3/XvRTrM09BGEPr75+Pq2Aue7hLpMxTn2iVZ4MqKW6UWRuEvQ+Ln34RyZ'
-OPNSENSE_API_SECRET = 'dsNfsP99QHxYoFuBrZU6U3JXB0xuAFZnTr84qhgIWj7B+UB25DeMIZoOf2uVuiVBI6n8ezFVi/YiIdGp'
-OPNSENSE_URL = 'https://10.22.30.114/api/unbound/settings/'
-OPNSENSE_URL_GET = 'https://10.22.30.114/api/unbound/settings/get'
+OPNSENSE_API_KEY = os.getenv('OPNSENSE_API_KEY')
+OPNSENSE_API_SECRET = os.getenv('OPNSENSE_API_SECRET')
+OPNSENSE_IP = os.getenv('OPNSENSE_IP')
+OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/unbound/settings/'
+OPNSENSE_URL_GET = f'https://{OPNSENSE_IP}/api/unbound/settings/get'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
 LOCAL_REPO_DIR = "/opt/download"
 

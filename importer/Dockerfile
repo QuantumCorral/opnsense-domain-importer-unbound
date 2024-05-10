@@ -16,6 +16,10 @@ RUN mkdir templates
 
 COPY templates/* templates/
 
+ENV OPNSENSE_API_KEY=""
+ENV OPNSENSE_API_SECRET=""
+ENV OPNSENSE_IP=""
+
 EXPOSE 5000
 
 CMD ["flask", "run", "--host=0.0.0.0"]
