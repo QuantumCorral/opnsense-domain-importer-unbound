@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OPNsense Domain Overrides Management</title>
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <style>
         body { padding-top: 40px; background-color: #f8f9fa; }
         .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -85,9 +85,9 @@
             </tbody>
         </table>
     </div>
-    <script src="/scrips/jquery-3.5.1.slim.min.js"></script>
-    <script src="/scrips/popper.min.js"></script>
-    <script src="/scrips/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/jquery-3.5.1.slim.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     <script>
         function showLoading() {
             document.getElementById('loading').style.display = 'block';

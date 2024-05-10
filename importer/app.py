@@ -7,7 +7,7 @@ import shutil
 import os
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 
 OPNSENSE_API_KEY = os.getenv('OPNSENSE_API_KEY')
 OPNSENSE_API_SECRET = os.getenv('OPNSENSE_API_SECRET')

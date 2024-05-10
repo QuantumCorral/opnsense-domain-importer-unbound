@@ -13,8 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
 RUN mkdir templates
+RUN mkdir static
 
 COPY templates/ templates/
+COPY static/ static/
 
 ENV OPNSENSE_API_KEY=""
 ENV OPNSENSE_API_SECRET=""

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Results - OPNsense Domain Overrides Management</title>
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <style>
         body { margin-top: 20px; }
         .updated { color: green; }
@@ -23,8 +23,8 @@
         </ul>
         <a href="/" class="btn btn-primary">Back to Home</a>
     </div>
-    <script src="/scrips/jquery-3.5.1.slim.min.js"></script>
-    <script src="/scrips/popper.min.js"></script>
-    <script src="/scrips/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/jquery-3.5.1.slim.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 </body>
 </html>
