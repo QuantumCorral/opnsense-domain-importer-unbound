@@ -1,4 +1,4 @@
-# OPNsense Unbound inporter
+# OPNsense Unbound importer
 
 Phyton Script welches die Domains aus dem Cache-Domain Repo als .txt Datein herunterlädt, alle .txt Datein durchsucht, alle zeilen mit 
 ```
