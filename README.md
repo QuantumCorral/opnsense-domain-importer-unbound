@@ -31,5 +31,5 @@ services:
 
 ```
 
-## image
+## Image
 ![image info](images/image.png)
