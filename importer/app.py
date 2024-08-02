@@ -94,7 +94,11 @@ def add_primary_domain(domain):
         json=data
     )
     if response.status_code == 200:
-        return response.json().get('uuid')
+        result = response.json()
+        if 'uuid' in result:
+            return result['uuid']
+        else:
+            print(f"Unexpected response structure: {result}")
     else:
         print(f"Failed to create domain {domain}: {response.text}")
     return None
