@@ -15,6 +15,7 @@ OPNSENSE_IP = os.getenv('OPNSENSE_IP')
 OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/bind/'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
 LOCAL_REPO_DIR = "/opt/download"
+NS_SERVERS = ['0-175-Bind9-DNS01.ns.lcl', '0-176-Bind9-DNS02.ns.lcl']  # Set your NS servers
 
 def clone_repo():
     if os.path.exists(LOCAL_REPO_DIR):
@@ -23,7 +24,7 @@ def clone_repo():
     print("Repository cloned.")
 
 def parse_domains():
-    domains = set()
+    domains = {}
     for root, _, files in os.walk(LOCAL_REPO_DIR):
         for file in files:
             if file.endswith('.txt'):
@@ -32,7 +33,16 @@ def parse_domains():
                     for line in f:
                         if line.strip() and not line.startswith('#'):
                             clean_line = re.sub(r'^[\*\.]+', '', line).strip()
-                            domains.add(clean_line)
+                            domain_parts = clean_line.split('.')
+                            if len(domain_parts) > 2:
+                                base_domain = '.'.join(domain_parts[-2:])
+                                if base_domain not in domains:
+                                    domains[base_domain] = set()
+                                domains[base_domain].add(clean_line)
+                            else:
+                                if clean_line not in domains:
+                                    domains[clean_line] = set()
+                                domains[clean_line].add(clean_line)
     return domains
 
 def get_current_domains():
@@ -64,7 +74,19 @@ def get_current_records(domain_uuid):
     return {}
 
 def add_primary_domain(domain):
-    data = {'domain': {'domainname': domain, 'type': 'primary'}}
+    data = {
+        'domain': {
+            'domainname': domain,
+            'type': 'primary',
+            'dnsserver': NS_SERVERS,
+            'mailadmin': 'admin.' + domain,
+            'ttl': 86400,
+            'refresh': 21600,
+            'retry': 3600,
+            'expire': 3542400,
+            'negative': 3600
+        }
+    }
     response = requests.post(
         OPNSENSE_URL + 'domain/addPrimaryDomain',
         verify=False,
@@ -72,20 +94,47 @@ def add_primary_domain(domain):
         json=data
     )
     if response.status_code == 200:
-        return response.status_code == 200, response.json()
-    else:
-        print(f"Error adding primary domain: {response.text}")
-        return False, response.text
+        return response.json().get('uuid')
+    return None
 
-def add_record(domain_uuid, name, ip_address, record_type='A'):
-    data = {'record': {'domain': domain_uuid, 'name': name, 'type': record_type, 'value': ip_address}}
+def add_record(domain_uuid, name, record_type, value):
+    data = {
+        'record': {
+            'domain': domain_uuid,
+            'name': name,
+            'type': record_type,
+            'value': value
+        }
+    }
     response = requests.post(
         OPNSENSE_URL + 'record/addRecord',
         verify=False,
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json=data
     )
-    return response.status_code == 200, response.json()
+    return response.status_code == 200
+
+def update_domains(server_ip):
+    clone_repo()
+    domains = parse_domains()
+    current_domains = get_current_domains()
+    results = {}
+
+    for domain, subdomains in domains.items():
+        if domain in current_domains:
+            domain_uuid = current_domains[domain]['uuid']
+        else:
+            domain_uuid = add_primary_domain(domain)
+        
+        if domain_uuid:
+            for subdomain in subdomains:
+                sub_name = subdomain.replace(f".{domain}", "")
+                success = add_record(domain_uuid, sub_name, 'A', server_ip)
+                results[subdomain] = 'Added' if success else f'Failed to add: {subdomain}'
+        else:
+            results[domain] = f'Failed to create domain: {domain}'
+
+    return render_template('update_results.html', results=results)
 
 @app.route('/', methods=['GET', 'POST'])
 def handle_request():
@@ -94,66 +143,40 @@ def handle_request():
         if action == 'update_domains':
             server_ip = request.form.get('auto_ip', '')
             return update_domains(server_ip)
-        elif action == 'restart_bind':
-            return restart_bind()
+        elif action == 'restart_unbound':
+            return restart_unbound()
         else:
-            return "Invalid action", 400
+            domain_name = request.form.get('domain_name', None)
+            server_ip = request.form.get('manual_ip', None)
+            if domain_name and server_ip:
+                domain = domain_name.split('.')[-2] + '.' + domain_name.split('.')[-1]
+                subdomain = domain_name.replace(f".{domain}", "")
+                domain_uuid = add_primary_domain(domain)
+                if domain_uuid:
+                    success = add_record(domain_uuid, subdomain, 'A', server_ip)
+                    message = f'DNS override added: {domain_name} with IP {server_ip}' if success else f'Error: Could not add record.'
+                else:
+                    message = f'Error: Could not create domain {domain}.'
+                return render_template('success.html', message=message)
 
-    current_overrides = get_current_domains()
-    return render_template('home.html', overrides=current_overrides)
-
-def update_domains(server_ip):
-    clone_repo()
-    domains = parse_domains()
     current_domains = get_current_domains()
-    results = {}
+    return render_template('home.html', overrides=current_domains)
 
-    for domain in domains:
-        main_domain = '.'.join(domain.split('.')[-2:])
-        subdomain = domain[:-len(main_domain)].rstrip('.')
-        if main_domain not in current_domains:
-            success, response = add_primary_domain(main_domain)
-            if success:
-                domain_uuid = response.get('uuid')
-                if not domain_uuid:
-                    results[domain] = f'Failed to add domain: {response}'
-                    continue
-                add_ns_record(domain_uuid, main_domain)
-                success, response = add_record(domain_uuid, subdomain, server_ip)
-                results[domain] = 'Added' if success else f'Failed to add record: {response}'
-            else:
-                results[domain] = f'Failed to add domain: {response}'
+@app.route('/restart-unbound', methods=['POST'])
+def restart_unbound():
+    restart_url = f'https://{OPNSENSE_IP}/api/bind/service/restart'
+    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
+    headers = {'Content-Type': 'application/json'}
+    data = json.dumps({})
+
+    try:
+        response = requests.post(restart_url, auth=auth, headers=headers, data=data, verify=False)
+        if response.status_code == 200:
+            return render_template('success.html', message='BIND DNS successfully restarted')
         else:
-            domain_uuid = current_domains[main_domain]['uuid']
-            current_records = get_current_records(domain_uuid)
-            if subdomain not in current_records:
-                success, response = add_record(domain_uuid, subdomain, server_ip)
-                results[domain] = 'Added' if success else f'Failed to add record: {response}'
-            else:
-                results[domain] = 'Already exists'
-
-    reconfigure_bind()
-    return render_template('update_results.html', results=results)
-
-def add_ns_record(domain_uuid, main_domain):
-    add_record(domain_uuid, '', f'ns1.{main_domain}', 'NS')
-    add_record(domain_uuid, '', f'ns2.{main_domain}', 'NS')
-
-def reconfigure_bind():
-    response = requests.post(
-        OPNSENSE_URL + 'service/reconfigure',
-        verify=False,
-        auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
-    )
-    return response.status_code == 200
-
-def restart_bind():
-    response = requests.post(
-        OPNSENSE_URL + 'service/restart',
-        verify=False,
-        auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
-    )
-    return "BIND restarted successfully." if response.status_code == 200 else "Failed to restart BIND.", response.status_code
+            return render_template('error.html', message=f'Failed to restart BIND DNS: {response.text}')
+    except Exception as e:
+        return render_template('error.html', message=str(e))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
