@@ -12,8 +12,7 @@ app = Flask(__name__, static_folder='static')
 OPNSENSE_API_KEY = os.getenv('OPNSENSE_API_KEY')
 OPNSENSE_API_SECRET = os.getenv('OPNSENSE_API_SECRET')
 OPNSENSE_IP = os.getenv('OPNSENSE_IP')
-OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/unbound/settings/'
-OPNSENSE_URL_GET = f'https://{OPNSENSE_IP}/api/unbound/settings/get'
+OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/bind/'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
 LOCAL_REPO_DIR = "/opt/download"
 
@@ -36,145 +35,113 @@ def parse_domains():
                             domains.add(clean_line)
     return domains
 
-def get_current_overrides():
+def get_current_domains():
     try:
         response = requests.get(
-            OPNSENSE_URL_GET,
+            OPNSENSE_URL + 'domain/searchPrimaryDomain',
             verify=False,
             auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
         )
         if response.status_code == 200:
             data = response.json()
-            domains_data = data.get('unbound', {}).get('domains', {}).get('domain', {})
-            if isinstance(domains_data, dict):
-                return {detail.get('domain', 'No domain info'): detail.get('server', 'No server info')
-                        for detail in domains_data.values()}
-            else:
-                return {}
+            return {item['name']: item for item in data.get('rows', [])}
     except requests.exceptions.RequestException as e:
         print("An error occurred:", e)
     return {}
 
+def get_current_records(domain_uuid):
+    try:
+        response = requests.get(
+            OPNSENSE_URL + f'record/searchRecord?domain={domain_uuid}',
+            verify=False,
+            auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return {item['name']: item for item in data.get('rows', [])}
+    except requests.exceptions.RequestException as e:
+        print("An error occurred:", e)
+    return {}
+
+def add_primary_domain(domain):
+    data = {'domain': {'name': domain, 'type': 'primary'}}
+    response = requests.post(
+        OPNSENSE_URL + 'domain/addPrimaryDomain',
+        verify=False,
+        auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
+        json=data
+    )
+    return response.status_code == 200, response.json()
+
+def add_record(domain_uuid, name, ip_address):
+    data = {'record': {'domain': domain_uuid, 'name': name, 'type': 'A', 'value': ip_address}}
+    response = requests.post(
+        OPNSENSE_URL + 'record/addRecord',
+        verify=False,
+        auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
+        json=data
+    )
+    return response.status_code == 200, response.json()
 
 @app.route('/', methods=['GET', 'POST'])
 def handle_request():
-    # Abrufen des aktuellen Status von Unbound DNS
-    unbound_status_info = unbound_status()
-    unbound_running = unbound_status_info.get('data', {}).get('status', 'unknown')
-
     if request.method == 'POST':
         action = request.form.get('action', '')
-        current_overrides = get_current_overrides()
-
         if action == 'update_domains':
             server_ip = request.form.get('auto_ip', '')
             return update_domains(server_ip)
-        elif action == 'restart_unbound':
-            return restart_unbound()
+        elif action == 'restart_bind':
+            return restart_bind()
         else:
-            domain_name = request.form.get('domain_name', None)
-            server_ip = request.form.get('manual_ip', None)
-            if domain_name and server_ip:
-                if domain_name in current_overrides:
-                    if current_overrides[domain_name] == server_ip:
-                        message = f'No change necessary: {domain_name} already has the IP {server_ip}.'
-                        return render_template('success.html', message=message)
-                    else:
-                        success, result = update_dns_override(domain_name, server_ip)
-                        message = f'DNS override updated: {domain_name} to IP {server_ip}' if success else f'Error: {result}'
-                else:
-                    success, result = add_dns_override(domain_name, server_ip)
-                    message = f'DNS override added: {domain_name} with IP {server_ip}' if success else f'Error: {result}'
-                return render_template('success.html', message=message)
+            return "Invalid action", 400
 
-    # Dieser Fall tritt auf, wenn kein POST-Request gesendet wird oder die erforderlichen Felder fehlen
-    current_overrides = get_current_overrides()
-    return render_template('home.html', overrides=current_overrides, unbound_running=unbound_running)
-
-
+    current_overrides = get_current_domains()
+    return render_template('home.html', overrides=current_overrides)
 
 def update_domains(server_ip):
     clone_repo()
     domains = parse_domains()
-    current_overrides = get_current_overrides()
+    current_domains = get_current_domains()
     results = {}
+
     for domain in domains:
-        if domain in current_overrides and current_overrides[domain] != server_ip:
-            success, response = update_dns_override(domain, server_ip)
-            results[domain] = 'Updated' if success else f'Failed to update: {response}'
-        elif domain not in current_overrides:
-            success, response = add_dns_override(domain, server_ip)
-            results[domain] = 'Added' if success else f'Failed to add: {response}'
+        main_domain = '.'.join(domain.split('.')[-2:])
+        subdomain = domain[:-len(main_domain)].rstrip('.')
+        if main_domain not in current_domains:
+            success, response = add_primary_domain(main_domain)
+            if success:
+                domain_uuid = response['uuid']
+                success, response = add_record(domain_uuid, subdomain, server_ip)
+                results[domain] = 'Added' if success else f'Failed to add record: {response}'
+            else:
+                results[domain] = f'Failed to add domain: {response}'
+        else:
+            domain_uuid = current_domains[main_domain]['uuid']
+            current_records = get_current_records(domain_uuid)
+            if subdomain not in current_records:
+                success, response = add_record(domain_uuid, subdomain, server_ip)
+                results[domain] = 'Added' if success else f'Failed to add record: {response}'
+            else:
+                results[domain] = 'Already exists'
+
+    reconfigure_bind()
     return render_template('update_results.html', results=results)
 
-
-def add_dns_override(domain, ip_address):
-    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
-    headers = {'Content-Type': 'application/json'}
-    data = {'domain': {'domain': domain, 'server': ip_address}}
-    response = requests.post(OPNSENSE_URL + "addDomainOverride", auth=auth, headers=headers, json=data, verify=False)
-    return response.status_code == 200, response.json()
-
-def get_domain_uuid(domain):
-    response = requests.get(
-        OPNSENSE_URL_GET,
+def reconfigure_bind():
+    response = requests.post(
+        OPNSENSE_URL + 'service/reconfigure',
         verify=False,
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
     )
-    data = response.json()
-    for uuid, details in data.get('unbound', {}).get('domains', {}).get('domain', {}).items():
-        if details.get('domain') == domain:
-            return uuid
-    return None
+    return response.status_code == 200
 
-def update_dns_override(domain, ip_address):
-    uuid = get_domain_uuid(domain)
-    if uuid:
-        auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
-        headers = {'Content-Type': 'application/json'}
-        data = json.dumps({'domain': {'domain': domain, 'server': ip_address}})
-        url = OPNSENSE_URL + f"setDomainOverride/{uuid}"
-        response = requests.post(url, auth=auth, headers=headers, data=data, verify=False)
-        return response.status_code == 200, response.json()
-    return False, "UUID not found for domain"
-
-
-@app.route('/restart-unbound', methods=['POST'])
-def restart_unbound():
-    restart_url = f'https://{OPNSENSE_IP}/api/unbound/service/restart'
-    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
-    headers = {'Content-Type': 'application/json'}
-
-    # Senden von leeren JSON-Daten
-    data = json.dumps({})
-
-    try:
-        response = requests.post(restart_url, auth=auth, headers=headers, data=data, verify=False)
-        if response.status_code == 200:
-            return render_template('success.html', message='Unbound DNS successfully restarted')
-        else:
-            return render_template('error.html', message=f'Failed to restart Unbound DNS: {response.text}')
-    except Exception as e:
-        return render_template('error.html', message=str(e))
-
-
-@app.route('/unbound-status', methods=['GET'])
-def unbound_status():
-    status_url = f'https://{OPNSENSE_IP}/api/unbound/service/status'
-    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
-
-    try:
-        response = requests.get(status_url, auth=auth, verify=False)  # Stellen Sie sicher, dass SSL-Zertifikate überprüft werden
-        if response.status_code == 200:
-            status_data = response.json()
-            return {'status': 'success', 'message': 'Unbound DNS status retrieved successfully', 'data': status_data}
-        else:
-            return {'status': 'error', 'message': f'Failed to retrieve Unbound DNS status: {response.text}'}
-    except Exception as e:
-        return {'status': 'error', 'message': str(e)}
-
-
-
+def restart_bind():
+    response = requests.post(
+        OPNSENSE_URL + 'service/restart',
+        verify=False,
+        auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
+    )
+    return "BIND restarted successfully." if response.status_code == 200 else "Failed to restart BIND.", response.status_code
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
