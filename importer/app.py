@@ -44,7 +44,7 @@ def get_current_domains():
         )
         if response.status_code == 200:
             data = response.json()
-            return {item['name']: item for item in data.get('rows', [])}
+            return {item['domainname']: item for item in data.get('rows', [])}
     except requests.exceptions.RequestException as e:
         print("An error occurred:", e)
     return {}
@@ -64,14 +64,18 @@ def get_current_records(domain_uuid):
     return {}
 
 def add_primary_domain(domain):
-    data = {'domain': {'name': domain, 'type': 'primary'}}
+    data = {'domain': {'domainname': domain, 'type': 'primary'}}
     response = requests.post(
         OPNSENSE_URL + 'domain/addPrimaryDomain',
         verify=False,
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json=data
     )
-    return response.status_code == 200, response.json()
+    if response.status_code == 200:
+        return response.status_code == 200, response.json()
+    else:
+        print(f"Error adding primary domain: {response.text}")
+        return False, response.text
 
 def add_record(domain_uuid, name, ip_address):
     data = {'record': {'domain': domain_uuid, 'name': name, 'type': 'A', 'value': ip_address}}
@@ -110,7 +114,10 @@ def update_domains(server_ip):
         if main_domain not in current_domains:
             success, response = add_primary_domain(main_domain)
             if success:
-                domain_uuid = response['uuid']
+                domain_uuid = response.get('uuid')
+                if not domain_uuid:
+                    results[domain] = f'Failed to add domain: {response}'
+                    continue
                 success, response = add_record(domain_uuid, subdomain, server_ip)
                 results[domain] = 'Added' if success else f'Failed to add record: {response}'
             else:
