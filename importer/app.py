@@ -95,6 +95,8 @@ def add_primary_domain(domain):
     )
     if response.status_code == 200:
         return response.json().get('uuid')
+    else:
+        print(f"Failed to create domain {domain}: {response.text}")
     return None
 
 def add_record(domain_uuid, name, record_type, value):
@@ -112,6 +114,8 @@ def add_record(domain_uuid, name, record_type, value):
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json=data
     )
+    if response.status_code != 200:
+        print(f"Failed to add record {name}.{domain_uuid}: {response.text}")
     return response.status_code == 200
 
 def delete_all_domains():
@@ -126,6 +130,8 @@ def delete_domain(domain_uuid):
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json={'uuid': domain_uuid}
     )
+    if response.status_code != 200:
+        print(f"Failed to delete domain {domain_uuid}: {response.text}")
     return response.status_code == 200
 
 def update_domains(server_ip):
