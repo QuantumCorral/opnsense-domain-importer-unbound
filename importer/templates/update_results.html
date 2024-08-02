@@ -16,7 +16,7 @@
         <h1>Update Results</h1>
         <ul>
             {% for domain, status in results.items() %}
-            <li class="{{ 'updated' if 'Updated' in status else 'failed' }}">
+            <li class="{{ 'updated' if 'Added' in status else 'failed' }}">
                 {{ domain }} - {{ status }}
             </li>
             {% endfor %}

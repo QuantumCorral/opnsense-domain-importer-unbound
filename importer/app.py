@@ -116,12 +116,12 @@ def add_record(domain_uuid, name, record_type, value):
 
 def delete_all_domains():
     current_domains = get_current_domains()
-    for domain_uuid in current_domains.values():
-        delete_domain(domain_uuid['uuid'])
+    for domain_name, domain_details in current_domains.items():
+        delete_domain(domain_details['uuid'])
 
 def delete_domain(domain_uuid):
     response = requests.post(
-        OPNSENSE_URL + f'domain/delDomain',
+        OPNSENSE_URL + 'domain/delDomain',
         verify=False,
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json={'uuid': domain_uuid}
