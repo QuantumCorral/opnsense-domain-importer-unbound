@@ -77,8 +77,8 @@ def add_primary_domain(domain):
         print(f"Error adding primary domain: {response.text}")
         return False, response.text
 
-def add_record(domain_uuid, name, ip_address):
-    data = {'record': {'domain': domain_uuid, 'name': name, 'type': 'A', 'value': ip_address}}
+def add_record(domain_uuid, name, ip_address, record_type='A'):
+    data = {'record': {'domain': domain_uuid, 'name': name, 'type': record_type, 'value': ip_address}}
     response = requests.post(
         OPNSENSE_URL + 'record/addRecord',
         verify=False,
@@ -118,6 +118,7 @@ def update_domains(server_ip):
                 if not domain_uuid:
                     results[domain] = f'Failed to add domain: {response}'
                     continue
+                add_ns_record(domain_uuid, main_domain)
                 success, response = add_record(domain_uuid, subdomain, server_ip)
                 results[domain] = 'Added' if success else f'Failed to add record: {response}'
             else:
@@ -133,6 +134,10 @@ def update_domains(server_ip):
 
     reconfigure_bind()
     return render_template('update_results.html', results=results)
+
+def add_ns_record(domain_uuid, main_domain):
+    add_record(domain_uuid, '', f'ns1.{main_domain}', 'NS')
+    add_record(domain_uuid, '', f'ns2.{main_domain}', 'NS')
 
 def reconfigure_bind():
     response = requests.post(
