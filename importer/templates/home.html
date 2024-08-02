@@ -66,7 +66,7 @@
             <span class="ml-2 badge {{ 'badge-success' if unbound_running == 'running' else 'badge-danger' }}">Status: {{ unbound_running }}</span>
         </form>
         <div class="section-header">
-            <h2>Delete All Domain Overrides</h2>
+            <h2>Delete All Domains</h2>
         </div>
         <form method="post" class="form-spacing">
             <button type="submit" class="btn btn-danger" name="action" value="delete_all_domains">Delete All Domains</button>
@@ -85,7 +85,7 @@
                 {% for domain, details in overrides.items() %}
                 <tr>
                     <td>{{ domain }}</td>
-                    <td>{{ details['dnsserver'] }}</td>
+                    <td>{{ details['type'] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

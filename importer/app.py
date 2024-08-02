@@ -15,7 +15,8 @@ OPNSENSE_IP = os.getenv('OPNSENSE_IP')
 OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/bind/'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
 LOCAL_REPO_DIR = "/opt/download"
-NS_SERVERS = ['0-175-Bind9-DNS01.ns.lcl', '0-176-Bind9-DNS02.ns.lcl']
+LOCAL_NS_SERVER = '0-175-Bind9-DNS01.ns.lcl'
+NS_RECORDS = ['0-175-Bind9-DNS01.ns.lcl', '0-176-Bind9-DNS02.ns.lcl']
 
 def clone_repo():
     if os.path.exists(LOCAL_REPO_DIR):
@@ -82,7 +83,7 @@ def add_primary_domain(domain):
         'domain': {
             'domainname': domain,
             'type': 'primary',
-            'dnsserver': NS_SERVERS,
+            'dnsserver': LOCAL_NS_SERVER,
             'mailadmin': 'admin.' + domain,
             'ttl': 86400,
             'refresh': 21600,
@@ -105,6 +106,8 @@ def add_primary_domain(domain):
         result = response.json()
         if 'uuid' in result:
             print(f"Domain {domain} created successfully with UUID: {result['uuid']}")
+            for ns in NS_RECORDS:
+                add_record(result['uuid'], '', 'NS', ns)
             return result['uuid']
         else:
             print(f"Unexpected response structure while creating domain {domain}: {result}")

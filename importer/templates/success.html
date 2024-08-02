@@ -42,7 +42,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="{{ 'success-message' if 'hinzugefügt' in message else 'error-message' }}">{{ message }}</h1>
+        <h1 class="{{ 'success-message' if 'successfully' in message else 'error-message' }}">{{ message }}</h1>
         <a href="/" class="btn btn-primary">Go back</a>
     </div>
     <script src="{{ url_for('static', filename='js/jquery-3.5.1.slim.min.js') }}"></script>
