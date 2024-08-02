@@ -97,6 +97,10 @@ def add_primary_domain(domain):
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json=data
     )
+    print(f"Request data for domain {domain}: {data}")
+    print(f"Response status code: {response.status_code}")
+    print(f"Response content: {response.text}")
+    
     if response.status_code == 200:
         result = response.json()
         if 'uuid' in result:
@@ -123,6 +127,10 @@ def add_record(domain_uuid, name, record_type, value):
         auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
         json=data
     )
+    print(f"Request data for record {name}: {data}")
+    print(f"Response status code: {response.status_code}")
+    print(f"Response content: {response.text}")
+    
     if response.status_code != 200:
         print(f"Failed to add record {name}.{domain_uuid}: {response.text}")
     else:
