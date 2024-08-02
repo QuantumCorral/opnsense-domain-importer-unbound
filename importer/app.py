@@ -227,6 +227,9 @@ def handle_request():
             return restart_bind()
         elif action == 'delete_all_domains':
             delete_all_domains()
+            # Reconfigure and restart BIND after deleting domains
+            reconfigure_bind()
+            restart_bind()
             return render_template('success.html', message='All domains have been deleted.')
         else:
             domain_name = request.form.get('domain_name', None)
