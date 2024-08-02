@@ -15,8 +15,9 @@ OPNSENSE_IP = os.getenv('OPNSENSE_IP')
 OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/bind/'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
 LOCAL_REPO_DIR = "/opt/download"
-LOCAL_NS_SERVER = '0-175-Bind9-DNS01.ns.lcl'
-NS_RECORDS = ['0-175-Bind9-DNS01.ns.lcl', '0-176-Bind9-DNS02.ns.lcl']
+LOCAL_NS_SERVER = '0-175-Bind9-DNS01'
+NS_RECORDS = ['0-175-Bind9-DNS01', '0-176-Bind9-DNS02']
+NS_A_RECORDS = {'0-175-Bind9-DNS01': '10.248.0.175', '0-176-Bind9-DNS02': '10.248.0.176'}
 
 def clone_repo():
     if os.path.exists(LOCAL_REPO_DIR):
@@ -108,6 +109,8 @@ def add_primary_domain(domain):
             print(f"Domain {domain} created successfully with UUID: {result['uuid']}")
             for ns in NS_RECORDS:
                 add_record(result['uuid'], '', 'NS', ns)
+            for ns, ip in NS_A_RECORDS.items():
+                add_record(result['uuid'], ns, 'A', ip)
             return result['uuid']
         else:
             print(f"Unexpected response structure while creating domain {domain}: {result}")
@@ -224,6 +227,21 @@ def restart_unbound():
             return render_template('error.html', message=f'Failed to restart BIND DNS: {response.text}')
     except Exception as e:
         return render_template('error.html', message=str(e))
+
+@app.route('/unbound-status', methods=['GET'])
+def unbound_status():
+    status_url = f'https://{OPNSENSE_IP}/api/bind/service/status'
+    auth = HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET)
+
+    try:
+        response = requests.get(status_url, auth=auth, verify=False)
+        if response.status_code == 200:
+            status_data = response.json()
+            return {'status': 'success', 'message': 'BIND DNS status retrieved successfully', 'data': status_data}
+        else:
+            return {'status': 'error', 'message': f'Failed to retrieve BIND DNS status: {response.text}'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

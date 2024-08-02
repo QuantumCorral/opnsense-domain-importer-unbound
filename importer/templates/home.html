@@ -27,7 +27,7 @@
             <h1>OPNsense Domain Overrides Management</h1>
         </div>
         <div class="status-alert alert alert-info" role="alert">
-            Unbound DNS Status: <strong class="{{ 'status-running' if unbound_running == 'running' else 'status-stopped' }}">{{ unbound_running }}</strong>
+            BIND DNS Status: <strong class="{{ 'status-running' if unbound_running == 'running' else 'status-stopped' }}">{{ unbound_running }}</strong>
         </div>
         <div id="loading">
             <div class="spinner-border text-primary" role="status">
@@ -59,10 +59,10 @@
             <button type="submit" class="btn btn-secondary" name="action" value="update_domains">Download and Update Domains</button>
         </form>
         <div class="section-header">
-            <h2>Unbound DNS Restart</h2>
+            <h2>BIND DNS Restart</h2>
         </div>
         <form method="post" class="form-spacing">
-            <button type="submit" class="btn btn-info" name="action" value="restart_unbound">Restart Unbound DNS</button>
+            <button type="submit" class="btn btn-info" name="action" value="restart_unbound">Restart BIND DNS</button>
             <span class="ml-2 badge {{ 'badge-success' if unbound_running == 'running' else 'badge-danger' }}">Status: {{ unbound_running }}</span>
         </form>
         <div class="section-header">
