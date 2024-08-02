@@ -55,6 +55,8 @@ def get_current_domains():
         if response.status_code == 200:
             data = response.json()
             return {item['domainname']: item for item in data.get('rows', [])}
+        else:
+            print(f"Error fetching current domains: {response.text}")
     except requests.exceptions.RequestException as e:
         print("An error occurred while getting current domains:", e)
     return {}
@@ -69,6 +71,8 @@ def get_current_records(domain_uuid):
         if response.status_code == 200:
             data = response.json()
             return {item['name']: item for item in data.get('rows', [])}
+        else:
+            print(f"Error fetching current records for domain {domain_uuid}: {response.text}")
     except requests.exceptions.RequestException as e:
         print("An error occurred while getting current records:", e)
     return {}
