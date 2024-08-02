@@ -56,7 +56,7 @@ def get_current_domains():
             data = response.json()
             return {item['domainname']: item for item in data.get('rows', [])}
     except requests.exceptions.RequestException as e:
-        print("An error occurred:", e)
+        print("An error occurred while getting current domains:", e)
     return {}
 
 def get_current_records(domain_uuid):
@@ -70,7 +70,7 @@ def get_current_records(domain_uuid):
             data = response.json()
             return {item['name']: item for item in data.get('rows', [])}
     except requests.exceptions.RequestException as e:
-        print("An error occurred:", e)
+        print("An error occurred while getting current records:", e)
     return {}
 
 def add_primary_domain(domain):
@@ -96,9 +96,10 @@ def add_primary_domain(domain):
     if response.status_code == 200:
         result = response.json()
         if 'uuid' in result:
+            print(f"Domain {domain} created successfully with UUID: {result['uuid']}")
             return result['uuid']
         else:
-            print(f"Unexpected response structure: {result}")
+            print(f"Unexpected response structure while creating domain {domain}: {result}")
     else:
         print(f"Failed to create domain {domain}: {response.text}")
     return None
@@ -120,6 +121,8 @@ def add_record(domain_uuid, name, record_type, value):
     )
     if response.status_code != 200:
         print(f"Failed to add record {name}.{domain_uuid}: {response.text}")
+    else:
+        print(f"Record {name} added to domain {domain_uuid} successfully.")
     return response.status_code == 200
 
 def delete_all_domains():
@@ -136,6 +139,8 @@ def delete_domain(domain_uuid):
     )
     if response.status_code != 200:
         print(f"Failed to delete domain {domain_uuid}: {response.text}")
+    else:
+        print(f"Domain {domain_uuid} deleted successfully.")
     return response.status_code == 200
 
 def update_domains(server_ip):
