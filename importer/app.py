@@ -15,7 +15,7 @@ OPNSENSE_IP = os.getenv('OPNSENSE_IP')
 OPNSENSE_URL = f'https://{OPNSENSE_IP}/api/bind/'
 REPO_URL = "https://github.com/uklans/cache-domains.git"
 LOCAL_REPO_DIR = "/opt/download"
-NS_SERVERS = ['0-175-Bind9-DNS01.ns.lcl', '0-176-Bind9-DNS02.ns.lcl']  # Set your NS servers
+NS_SERVERS = ['0-175-Bind9-DNS01.ns.lcl', '0-176-Bind9-DNS02.ns.lcl']
 
 def clone_repo():
     if os.path.exists(LOCAL_REPO_DIR):
@@ -114,6 +114,20 @@ def add_record(domain_uuid, name, record_type, value):
     )
     return response.status_code == 200
 
+def delete_all_domains():
+    current_domains = get_current_domains()
+    for domain_uuid in current_domains.values():
+        delete_domain(domain_uuid['uuid'])
+
+def delete_domain(domain_uuid):
+    response = requests.post(
+        OPNSENSE_URL + f'domain/delDomain',
+        verify=False,
+        auth=HTTPBasicAuth(OPNSENSE_API_KEY, OPNSENSE_API_SECRET),
+        json={'uuid': domain_uuid}
+    )
+    return response.status_code == 200
+
 def update_domains(server_ip):
     clone_repo()
     domains = parse_domains()
@@ -145,6 +159,9 @@ def handle_request():
             return update_domains(server_ip)
         elif action == 'restart_unbound':
             return restart_unbound()
+        elif action == 'delete_all_domains':
+            delete_all_domains()
+            return render_template('success.html', message='All domains have been deleted.')
         else:
             domain_name = request.form.get('domain_name', None)
             server_ip = request.form.get('manual_ip', None)
