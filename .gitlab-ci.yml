@@ -1,5 +1,6 @@
 stages:
   - build
+  - doc
 unbound-importer:
   stage: build
   image: docker:19.03.12
@@ -10,3 +11,16 @@ unbound-importer:
     - docker build -f importer/Dockerfile --build-arg GIT_VERSION="$CI_PROJECT_NAME-$CI_PIPELINE_IID" --tag $CI_REGISTRY_IMAGE/importer-$CI_COMMIT_BRANCH importer
     - docker push $CI_REGISTRY_IMAGE/importer-$CI_COMMIT_BRANCH:latest
   when: manual
+
+wiki-doc:
+  stage: doc
+  image: registry.gitlab.com/netsession1/dokumentation/push_docs_to_wiki/main:latest
+  script:
+    - ls /push_docs_to_wiki
+    - python /push_docs_to_wiki/main.py README.md docker-compose.yml
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+    - changes:
+      - README.md
+      - .gitlab-ci.yml
+      - docker-compose.yml
