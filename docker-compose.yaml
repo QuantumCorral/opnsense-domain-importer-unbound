@@ -1,0 +1,13 @@
+---
+
+services:
+  unbound-importer:
+    image: registry.gitlab.com/netsession1/dns/opnsense-domain-importer-unbound/importer-main:latest
+    restart: always
+    ports:
+      - 5000:5000
+    environment:
+     - OPNSENSE_IP=
+     - OPNSENSE_API_KEY=
+     - OPNSENSE_API_SECRET=
+
